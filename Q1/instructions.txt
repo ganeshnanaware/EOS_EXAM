@@ -1,0 +1,124 @@
+GITHUB EOS_EXAM REPOSITORY - NEW DEVICE GUIDE
+============================================
+
+This guide explains how to set up a new computer, download your EOS_EXAM repository, and pull/push changes.
+
+1. FIRST-TIME SETUP ON THE NEW DEVICE
+-------------------------------------
+
+Install Git and GitHub CLI on Ubuntu:
+
+    sudo apt update
+    sudo apt install git gh
+
+Log in to GitHub:
+
+    gh auth login
+
+Choose these options when prompted:
+    Account: GitHub.com
+    Protocol: HTTPS
+    Authenticate Git with your GitHub credentials: Yes
+    Authentication method: Login with a web browser
+
+Follow the browser instructions and authorize GitHub CLI.
+
+Set your Git commit identity (use your own GitHub-associated email):
+
+    git config --global user.name "ganeshananware"
+    git config --global user.email "cdacganesh1508@gmail.com"
+
+Check the login and configuration:
+
+    gh auth status
+    git config --global --list
+
+2. DOWNLOAD (CLONE) THE REPOSITORY
+----------------------------------
+
+Create a projects folder and move into it:
+
+    mkdir -p ~/Projects
+    cd ~/Projects
+
+Clone the repository (replace YOUR_USERNAME with your GitHub username):
+
+    gh repo clone YOUR_USERNAME/EOS_EXAM
+
+Enter the repository folder:
+
+    cd EOS_EXAM
+
+You only need to clone the repository once on each device.
+
+3. EACH TIME YOU START WORKING
+------------------------------
+
+Go to the repository folder:
+
+    cd ~/Projects/EOS_EXAM
+
+Download the latest changes from GitHub:
+
+    git pull --ff-only
+
+Now edit your files, add folders, or create output files.
+
+4. UPLOAD YOUR CHANGES TO GITHUB
+--------------------------------
+
+After making changes, run:
+
+    git add -A && git commit -m "Updated EOS_EXAM" && git push
+
+This stages new, modified, and deleted files (except files excluded by .gitignore), creates a commit, and pushes it to GitHub.
+
+You can change the commit message, for example:
+
+    git add -A && git commit -m "Add Q3 practical output" && git push
+
+5. OPTIONAL: CREATE THE ONE-COMMAND 'gpush' SHORTCUT
+----------------------------------------------------
+
+The gpush shortcut is configured separately on each computer. To create it on a new Ubuntu device, add this function to ~/.bashrc:
+
+    gpush() {
+        if [ "$#" -eq 0 ]; then
+            echo 'Usage: gpush "commit message"'
+            return 1
+        fi
+
+        git rev-parse --show-toplevel >/dev/null 2>&1 || {
+            echo "Error: Not inside a Git repository."
+            return 1
+        }
+
+        git add -A || return 1
+
+        if git diff --cached --quiet; then
+            echo "No changes to commit."
+            return 0
+        fi
+
+        git commit -m "$*" && git push
+    }
+
+Then reload the configuration:
+
+    source ~/.bashrc
+
+Use it from inside the repository:
+
+    cd ~/Projects/EOS_EXAM
+    gpush "Updated EOS_EXAM"
+
+IMPORTANT NOTES
+---------------
+
+- Clone once per device. Do not clone again every time you work.
+- Pull before starting work so you have the latest version.
+- Push after making changes so they are uploaded to GitHub.
+- If you work on the same repository from more than one device, push changes from one device before pulling and working on the other.
+- The gpush command stages all non-ignored changes, including new files, output files, and deletions. Check `git status` before pushing if you want to review what will be uploaded.
+- Never commit passwords, API keys, access tokens, or other secrets.
+- Replace YOUR_USERNAME and YOUR_GITHUB_EMAIL with your actual GitHub details.
