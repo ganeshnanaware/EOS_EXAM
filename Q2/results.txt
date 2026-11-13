@@ -1,0 +1,10 @@
+Number : 1 Cube : 1
+Number : 2 Cube : 8
+Number : 3 Cube : 27
+Number : 4 Cube : 64
+Number : 5 Cube : 125
+Number : 6 Cube : 216
+Number : 7 Cube : 343
+Number : 8 Cube : 512
+Number : 9 Cube : 729
+Number : 10 Cube : 1000
