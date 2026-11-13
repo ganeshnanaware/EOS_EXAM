@@ -1,55 +1,97 @@
-/****
-
-1. Attempy all questions
-2. Proogram must be written in C language and excuted on a Linux enviroment.
-3. student must demostrate:
-	a)source code
-	b)successful compilation
-	c)program execution
-	d) Expected output 
-4.for each task, include observationand a short explaination of what the resilt demostrate
-5.include screenshots or terminal output wherever they help demostrate the result
-6. Proper error handling should be implementated for all system calls and library functions
-7. Approprite comment should be included in the source code
-8. All IPC and sychronisation resources created during excution must beproperly cleaned before program terination
-9.compilation warning should be avoided as far as possible
-10. Evalution will be based on:
-	a) program correctness
-	b)successful execution 
-	c)use of aproprite IPC and sychronization mechanisms
-	d)code quality
-	e)understanding demostrated during viva examination
-
-note:
-
-a) partial marks may be awarded for correct program design, flowchart,logic and implementation approach evan if the program is not fully functional
-b) Any assumption made during implememntation should be clearly documentated.
-c) ensure all generated files(eg. output.txt)and outputs are available for evalution
-	
-Q2. write a c program that: 
-  a) create a child process using fork()
-  b)The child process creates two threads:
-  	i.Reader thread 
-  	ii. Processor thread
-  c)Reader thred generates 10 logs IDs(1-10) and stores them in a shared buffer
-  d) processor thread retrives the log IDs and displays:
-  	Example-
-  		Log ID: 5 Processed
-  e)Use POSIX mutex
-  f) the parent process should send the message "START" to the child thourgh aFIFO before proocessing begins.
-  g)Ensure all threads amnd processes terminates gracefully
-  
-shows:
-	a) compilation
-	b)excution
-	c) output
-	
-
-
-****/
-
 #include <stdio.h>
-int main ()
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+
+#define FIFO_NAME "/tmp/log_fifo"
+
+int buffer[10];
+int written = 0;
+int processed = 0;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *reader(void *arg)
 {
-return 0;
+    int i;
+
+    for (i = 1; i <= 10; i++)
+    {
+        pthread_mutex_lock(&lock);
+        buffer[written] = i;
+        written++;
+        pthread_mutex_unlock(&lock);
+        usleep(100000);
+    }
+    return NULL;
+}
+
+void *processor(void *arg)
+{
+    int id;
+
+    while (processed < 10)
+    {
+        pthread_mutex_lock(&lock);
+        if (processed < written)
+        {
+            id = buffer[processed];
+            processed++;
+            pthread_mutex_unlock(&lock);
+            printf("Log ID: %d Processed\n", id);
+        }
+        else
+        {
+            pthread_mutex_unlock(&lock);
+            usleep(50000);
+        }
+    }
+    return NULL;
+}
+
+int main()
+{
+    pid_t pid;
+    int fd;
+    char msg[10];
+    pthread_t t1, t2;
+
+    mkfifo(FIFO_NAME, 0666);
+
+    pid = fork();
+
+    if (pid == 0)
+    {
+        fd = open(FIFO_NAME, O_RDONLY);
+        memset(msg, 0, sizeof(msg));
+        read(fd, msg, sizeof(msg));
+        close(fd);
+        printf("Child: Message received from parent = %s\n", msg);
+
+        pthread_create(&t1, NULL, reader, NULL);
+        pthread_create(&t2, NULL, processor, NULL);
+
+        pthread_join(t1, NULL);
+        pthread_join(t2, NULL);
+
+        pthread_mutex_destroy(&lock);
+        printf("Child: All logs processed\n");
+    }
+    else
+    {
+        fd = open(FIFO_NAME, O_WRONLY);
+        write(fd, "START", 6);
+        close(fd);
+        printf("Parent: START message sent\n");
+
+        wait(NULL);
+
+        unlink(FIFO_NAME);
+        printf("Parent: Child finished\n");
+    }
+
+    return 0;
 }
